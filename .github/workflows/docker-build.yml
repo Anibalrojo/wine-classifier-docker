@@ -1,0 +1,44 @@
+    name: Build and Test Wine Classifier
+
+    on:
+      push:
+        branches: [ main, master ]
+      pull_request:
+        branches: [ main, master ]
+
+    jobs:
+      build-and-test:
+        runs-on: ubuntu-latest
+
+        steps:
+        - name: Checkout code # Step 1: Get repo code
+          uses: actions/checkout@v4
+
+        - name: Build Docker image # Step 2: Build the Docker image using Dockerfile
+          run: docker build -t wine-classifier .
+
+        - name: Test Docker container # Step 3: Run the container and test its API endpoints
+          run: |
+            echo "Starting container..."
+            # Run the container in detached mode (-d), map port 5000, and give it a name
+            docker run -d -p 5000:5000 --name test-container wine-classifier
+            echo "Waiting for container to start..."
+            # Give the container some time to fully start up (adjust if needed)
+            sleep 25 
+            
+            echo "Testing API health endpoint..."
+            # Use curl to hit the health endpoint. -f ensures it fails on HTTP errors
+            curl -f http://localhost:5000/ || exit 1
+            echo "API health endpoint is working!"
+            
+            echo "Testing prediction endpoint..."
+            # Use curl to hit the prediction endpoint with sample data
+            curl -X POST -H "Content-Type: application/json" \
+              -d '{"instances":[{"alcohol":13.2,"malic_acid":1.78,"ash":2.14,"alcalinity_of_ash":11.2,"magnesium":100,"total_phenols":2.65,"flavanoids":2.76,"nonflavanoid_phenols":0.26,"proanthocyanins":1.28,"color_intensity":4.38,"hue":1.05,"od280/od315_of_diluted_wines":3.4,"proline":1050}]}' \
+              http://localhost:5000/predict || exit 1
+            echo "Prediction endpoint working!"
+            
+            echo "Cleaning up container..."
+            docker stop test-container # Stop the container
+            docker rm test-container # Remove the container
+            echo "All tests passed and container cleaned up!"
