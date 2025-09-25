@@ -1,44 +1,69 @@
-    name: Build and Test Wine Classifier
+name: Build and Test Wine Classifier
 
-    on:
-      push:
-        branches: [ main, master ]
-      pull_request:
-        branches: [ main, master ]
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
-    jobs:
-      build-and-test:
-        runs-on: ubuntu-latest
+env:
+  DOCKER_IMAGE_NAME: wine-classifier
 
-        steps:
-        - name: Checkout code # Step 1: Get repo code
-          uses: actions/checkout@v4
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
 
-        - name: Build Docker image # Step 2: Build the Docker image using Dockerfile
-          run: docker build -t wine-classifier .
+    steps:
+    - name: Checkout code # Step 1: Get repo code
+      uses: actions/checkout@v4
 
-        - name: Test Docker container # Step 3: Run the container and test its API endpoints
-          run: |
-            echo "Starting container..."
-            # Run the container in detached mode (-d), map port 5000, and give it a name
-            docker run -d -p 5000:5000 --name test-container wine-classifier
-            echo "Waiting for container to start..."
-            # Give the container some time to fully start up (adjust if needed)
-            sleep 25 
+    - name: Build Docker image # Step 2: Build the Docker image, but don't push it yet
+      run: docker build -t ${{ env.DOCKER_IMAGE_NAME }} .
+
+    - name: Test Docker container # Step 3: Run the container and test its API endpoints
+      run: |
+        echo "Starting container..."
+        # Run the container in detached mode (-d), map port 5000, and give it a name
+        docker run -d -p 5000:5000 --name test-container wine-classifier
+        echo "Waiting for container to start..."
+        # Give the container some time to fully start up (adjust if needed)
+        sleep 25 
+        
+        echo "Testing API health endpoint..."
+        # Use curl to hit the health endpoint. -f ensures it fails on HTTP errors
+        curl -f http://localhost:5000/ || exit 1
+        echo "API health endpoint is working!"
+        
+        echo "Testing prediction endpoint..."
+        # Use curl to hit the prediction endpoint with sample data
+        curl -X POST -H "Content-Type: application/json" \
+          -d '{"instances":[{"alcohol":13.2,"malic_acid":1.78,"ash":2.14,"alcalinity_of_ash":11.2,"magnesium":100,"total_phenols":2.65,"flavanoids":2.76,"nonflavanoid_phenols":0.26,"proanthocyanins":1.28,"color_intensity":4.38,"hue":1.05,"od280/od315_of_diluted_wines":3.4,"proline":1050}]}' \
+          http://localhost:5000/predict || exit 1
+        echo "Prediction endpoint working!"
             
-            echo "Testing API health endpoint..."
-            # Use curl to hit the health endpoint. -f ensures it fails on HTTP errors
-            curl -f http://localhost:5000/ || exit 1
-            echo "API health endpoint is working!"
-            
-            echo "Testing prediction endpoint..."
-            # Use curl to hit the prediction endpoint with sample data
-            curl -X POST -H "Content-Type: application/json" \
-              -d '{"instances":[{"alcohol":13.2,"malic_acid":1.78,"ash":2.14,"alcalinity_of_ash":11.2,"magnesium":100,"total_phenols":2.65,"flavanoids":2.76,"nonflavanoid_phenols":0.26,"proanthocyanins":1.28,"color_intensity":4.38,"hue":1.05,"od280/od315_of_diluted_wines":3.4,"proline":1050}]}' \
-              http://localhost:5000/predict || exit 1
-            echo "Prediction endpoint working!"
-            
-            echo "Cleaning up container..."
-            docker stop test-container # Stop the container
-            docker rm test-container # Remove the container
-            echo "All tests passed and container cleaned up!"
+        echo "Cleaning up container..."
+        docker stop test-container # Stop the container
+        docker rm test-container # Remove the container
+        echo "All tests passed and container cleaned up!"
+
+  push-to-docker-hub:
+    needs: build-and-test # This job will only run if 'build-and-test' job succeeded
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' # Only push from main/master branch
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3 # This action securely logs into Docker Hub
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and Push Docker image
+      # Re-build the image (faster due to Docker caching) and then push it to Docker Hub
+      run: |
+        docker build -t ${{ env.DOCKER_IMAGE_NAME }} .
+        docker tag ${{ env.DOCKER_IMAGE_NAME }} anibalrojosan/${{ env.DOCKER_IMAGE_NAME }}:latest
+        docker push anibalrojosan/${{ env.DOCKER_IMAGE_NAME }}:latest
