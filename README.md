@@ -96,13 +96,13 @@ POST /predict
 │   └── workflows/
 │       └── docker-build.yml    # GitHub Actions CI/CD
 ├── Dockerfile                  # Docker configuration
-├── app.py                     # Flask API application
-├── train_model.py             # Model training script
-├── requirements.txt           # Python dependencies
-├── request.json              # Sample request for testing
-├── .gitignore                # Git ignore rules
-├── LICENSE                   # MIT License
-└── README.md                 # This file
+├── app.py                      # Flask API application
+├── train_model.py              # Model training script
+├── requirements.txt            # Python dependencies
+├── request.json                # Sample request for testing
+├── .gitignore                  # Git ignore rules
+├── LICENSE                     # MIT License
+└── README.md                   # This file
 ```
 
 ## License
