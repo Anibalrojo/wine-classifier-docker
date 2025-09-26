@@ -20,7 +20,7 @@ A machine learning API for wine classification using the Wine dataset from sciki
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/YOUR_USERNAME/wine-classifier-docker.git
+    git clone https://github.com/Anibalrojo/wine-classifier-docker
     cd wine-classifier-docker
     ```
 
