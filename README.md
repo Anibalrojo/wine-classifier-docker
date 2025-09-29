@@ -15,8 +15,11 @@ A machine learning API for wine classification using the Wine dataset from sciki
 
 -   Docker installed on your system
 -   Git (for cloning the repository)
+-   Google Cloud Platform (GCP) account and `gcloud CLI` configured for deployment
+-   Docker Hub account for image registry
+-   GitHub repository with necessary secrets (`DOCKER_USERNAME`, `DOCKER_PASSWORD`, `GCP_SA_KEY`)
 
-### Running with Docker
+### Running with Docker (Local)
 
 1.  **Clone the repository:**
     ```bash
@@ -94,21 +97,58 @@ POST /predict
 .
 ├── .github/
 │   └── workflows/
-│       └── docker-build.yml    # GitHub Actions CI/CD
-├── Dockerfile                  # Docker configuration
+│       └── docker-build.yml    # GitHub Actions CI/CD workflow
+├── Dockerfile                  # Docker configuration for building the image
 ├── app.py                      # Flask API application
 ├── train_model.py              # Model training script
 ├── requirements.txt            # Python dependencies
-├── request.json                # Sample request for testing
+├── request.json                # Sample request for API testing
 ├── .gitignore                  # Git ignore rules
 ├── LICENSE                     # MIT License
 └── README.md                   # This file
 ```
 
+## MLOps Project Progress
+
+This project is part of a larger MLOps learning activity. Below is a summary of the completed and pending steps.
+
+### Completed Steps:
+
+1.  **Predictive Model**:
+    *   Dataset used: Wine dataset (from scikit-learn).
+    *   Model trained and saved using `joblib`.
+2.  **Flask API**:
+    *   Creation of an API with `GET /` (status) and `POST /predict` (prediction) routes.
+    *   Implementation of input validation and basic error handling.
+3.  **Dockerization**:
+    *   Writing of a functional `Dockerfile` that packages the API and the model.
+    *   Inclusion of dependencies and a reproducible environment.
+    *   Local testing with `docker run` performed successfully.
+4.  **Automated CI/CD (with GitHub Actions)**:
+    *   Creation of a GitHub Actions workflow (`docker-build.yml`).
+    *   Configuration to automatically:
+        *   Build the Docker container.
+        *   Perform basic endpoint tests (`GET /`, `POST /predict`).
+        *   Push to Docker Hub (`anibalrojosan/wine-classifier:latest`).
+        *   Push to Google Artifact Registry (`southamerica-east1-docker.pkg.dev/YOUR_GOOGLE_CLOUD_PROJECT_ID/wine-classifier-repo/wine-classifier:latest`).
+    *   Configuration of Google Cloud credentials (Service Account Key) as a GitHub Secret (`GCP_SA_KEY`) for Artifact Registry.
+
+### Pending Steps:
+
+1.  **Cloud Deployment (GCP: Vertex AI + Cloud Storage)**:
+    *   Finalize model upload to Cloud Storage (artifacts have already been uploaded).
+    *   Register the model in Vertex AI using the Artifact Registry image (Phase 2, Step 4, requires `MODEL_ID`).
+    *   Create and deploy the model to a Vertex AI Endpoint.
+    *   Test the public endpoint with `curl`.
+    *   Document the process with screenshots or `curl` commands.
+2.  **Basic Dashboard or Monitoring**:
+    *   Show how the endpoint is monitored (using GCP Cloud Monitoring and Cloud Logging).
+    *   Configure basic metrics (latency, usage frequency).
+3.  **Automated CI/CD (Optional - Complete GCP Deployment)**:
+    *   Integrate the Vertex AI deployment automation into the GitHub Actions workflow.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
----
-
-**Built with Python, Flask, scikit-learn, and Docker**
+-----Built with Python, Flask, scikit-learn, and Docker
